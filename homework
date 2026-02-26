@@ -1,0 +1,33 @@
+-- 1) Новые категории
+INSERT INTO categories (id, title) VALUES
+(5, 'Smart Home'),
+(6, 'Streaming');
+
+-- 2) Новые продукты
+INSERT INTO products (id, title, price, category_id) VALUES
+-- Smart Home
+(21, 'Smart Light Bulb', 3500, 5),
+(22, 'Smart Thermostat', 15000, 5),
+-- Streaming
+(23, 'Streaming Media Stick', 8000, 6),
+(24, '4K Streaming Box', 20000, 6),
+-- Существующие категории (пример: 1 = Electronics, 2 = Computers)
+(25, 'Wireless Mouse', 4000, 1),
+(26, 'Mechanical Keyboard', 12000, 1),
+(27, 'Laptop Backpack', 5000, 2),
+(28, 'External SSD 1TB', 22000, 2);
+
+-- 3) Новые заказы
+INSERT INTO orders (id, customer, total, created_at) VALUES
+(101, 'Alice', 2800, '2026-02-01'),
+(102, 'Bob', 90000, '2026-02-02'),
+(103, 'Alice', 35000, '2026-02-03'),
+(104, 'Charlie', 15000, '2026-02-03'),
+(105, 'Bob', 120000, '2026-02-04'),
+(106, 'David', 2500, '2026-02-05'),
+(107, 'Charlie', 80000, '2026-02-05'),
+(108, 'Eve', 45000, '2026-02-06'),
+(109, 'Alice', 5000, '2026-02-06'),
+(110, 'Charlie', 12000, '2026-02-07'),
+(111, 'Bob', 3500, '2026-02-08'),
+(112, 'Eve', 9000, '2026-02-09');
