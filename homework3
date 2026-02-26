@@ -1,0 +1,117 @@
+SELECT
+    c.id,
+    c.name,
+    CASE 
+        WHEN (SELECT COUNT(*) FROM orders o WHERE o.customer = c.name) = 0 THEN 'new'
+        WHEN (SELECT COUNT(*) FROM orders o WHERE o.customer = c.name) BETWEEN 1 AND 2 THEN 'returning'
+        ELSE 'loyal'
+    END AS client_type
+FROM customers c;
+
+SELECT
+    o.id,
+    o.created_at,
+    o.status,
+    CASE
+        WHEN o.status = 'cancelled' THEN 'high'
+        WHEN o.status = 'new' AND o.created_at < CURRENT_DATE - INTERVAL '3 days' THEN 'medium'
+        ELSE 'low'
+    END AS risk_label
+FROM orders o;
+
+SELECT
+    p.id,
+    p.title,
+    p.price,
+    p.category_id
+FROM products p
+WHERE p.price = (
+    SELECT MAX(p2.price)
+    FROM products p2
+    WHERE p2.category_id = p.category_id
+);
+
+SELECT
+    p.id,
+    p.title,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 FROM order_items oi WHERE oi.product_id = p.id
+        ) THEN 'sold'
+        ELSE 'not_sold'
+    END AS sold_flag
+FROM products p;
+
+SELECT
+    o.id,
+    (SELECT COALESCE(SUM(pay.paid_amount),0) FROM payments pay WHERE pay.order_id = o.id) AS paid_amount,
+    (SELECT COALESCE(SUM(oi.qty * p.price),0) 
+     FROM order_items oi, products p 
+     WHERE oi.order_id = o.id AND oi.product_id = p.id) AS items_total
+FROM orders o
+WHERE (SELECT COALESCE(SUM(pay.paid_amount),0) FROM payments pay WHERE pay.order_id = o.id) >
+      (SELECT COALESCE(SUM(oi.qty * p.price),0) 
+       FROM order_items oi, products p 
+       WHERE oi.order_id = o.id AND oi.product_id = p.id);
+
+SELECT
+    o.id,
+    o.status
+FROM orders o
+WHERE EXISTS (
+    SELECT 1 FROM order_items oi, products p
+    WHERE oi.order_id = o.id AND oi.product_id = p.id AND p.price > 20000
+);
+
+SELECT
+    o.id,
+    CASE 
+        WHEN (SELECT SUM(oi.qty * p.price) 
+              FROM order_items oi, products p 
+              WHERE oi.order_id = o.id AND oi.product_id = p.id) IS NULL THEN 'zero'
+        WHEN (SELECT SUM(oi.qty * p.price) 
+              FROM order_items oi, products p 
+              WHERE oi.order_id = o.id AND oi.product_id = p.id) < 10000 THEN 'small'
+        WHEN (SELECT SUM(oi.qty * p.price) 
+              FROM order_items oi, products p 
+              WHERE oi.order_id = o.id AND oi.product_id = p.id) <= 50000 THEN 'medium'
+        ELSE 'big'
+    END AS check_class
+FROM orders o;
+
+SELECT
+    c.id,
+    c.name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o, payments pay
+    WHERE o.customer = c.name AND o.id = pay.order_id
+)
+AND NOT EXISTS (
+    SELECT 1 FROM orders o2, shipments s
+    WHERE o2.customer = c.name AND o2.id = s.order_id
+);
+
+SELECT
+    o.id,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 FROM order_items oi WHERE oi.order_id = o.id
+        ) THEN 'filled'
+        ELSE 'empty'
+    END AS items_state
+FROM orders o;
+
+SELECT
+    o.id,
+    CASE 
+        WHEN EXISTS (SELECT 1 FROM payments pay WHERE pay.order_id = o.id) AND
+             (SELECT COALESCE(SUM(oi.qty * p.price),0) FROM order_items oi, products p WHERE oi.order_id = o.id AND oi.product_id = p.id) >= 50000 THEN 'A'
+        WHEN EXISTS (SELECT 1 FROM payments pay WHERE pay.order_id = o.id) AND
+             (SELECT COALESCE(SUM(oi.qty * p.price),0) FROM order_items oi, products p WHERE oi.order_id = o.id AND oi.product_id = p.id) < 50000 AND
+             (SELECT COALESCE(SUM(oi.qty * p.price),0) FROM order_items oi, products p WHERE oi.order_id = o.id AND oi.product_id = p.id) > 0 THEN 'B'
+        WHEN NOT EXISTS (SELECT 1 FROM payments pay WHERE pay.order_id = o.id) AND
+             (SELECT COALESCE(SUM(oi.qty * p.price),0) FROM order_items oi, products p WHERE oi.order_id = o.id AND oi.product_id = p.id) > 0 THEN 'C'
+        ELSE 'D'
+    END AS business_grade
+FROM orders o;
